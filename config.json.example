@@ -1,0 +1,12 @@
+{
+"address":"youraddresshere",
+"db":{
+	"host": "localhost",
+	"user": "root",
+	"password": "password",
+	"database": "database"
+},
+"aes265Key":"yourkeyhere",
+"translate":"http://server.bkwhentai.tw/bdtr.php",
+
+}
