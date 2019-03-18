@@ -4,16 +4,11 @@ const requestLib = require("request");
 const app = http.createServer();
 const ytdl = require('ytdl-core');
 const mysql = require('mysql');
+const config = require("./config.json")
 
-var address = "http://localhost:5700/send_group_msg?";
+var address = config.address;
 var debug = false;
 var grep = /^@[\S\s]*/;
-var db = {
-    host: 'localhost',
-    user: 'root',
-    password: '12shf1',
-    database: 'qqbot'
-};
 
 var groups = new Array();
 groups["AIC"] = ["190674121", "118047250"];
@@ -26,7 +21,7 @@ groups["IKUNA"] = ["739889796", "118047250"];
 groups["kotobumi"] = ["776234515"];
 
 function send(type, send_text) {
-    var conn = mysql.createConnection(db);
+    var conn = mysql.createConnection(config.db);
     conn.connect();
     for (let i = 0, len = groups[type].length; i < len; i++) {
         conn.query('select * from pause where group_id="' + groups[type][i] + '"', (err, result) => {
