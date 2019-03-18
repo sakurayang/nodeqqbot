@@ -5,26 +5,15 @@ const mysql = require("mysql");
 const AipContentCensorClient = require("baidu-aip-sdk").contentCensor;
 const HttpClient = require("baidu-aip-sdk").HttpClient;
 const crypto = require('crypto');
+const config = require("./config.json")
 
 
-var APP_ID = "15671324";
-var API_KEY = "E9BdOcqOUb12RsSK1AGlXeHZ";
-var SECRET_KEY = "Q3pipi5bU129bvmPan1LSaH4f8pn4bbu";
-
-
-
-var client = new AipContentCensorClient(APP_ID, API_KEY, SECRET_KEY);
 var grep_image = /[\S\s]*\[CQ:image[\S\s]*.\]/;
 var grep_command = /^![\Ss]*/;
 var grep_at = /[\S\s]*\[CQ:at,qq=2782255175\][\S\s]*/;
 var app = http.createServer();
-var translate_url = "http://server.bkwhentai.tw/bdtr.php";
-var db = {
-    host: 'localhost',
-    user: 'root',
-    password: '12shf1',
-    database: 'qqbot'
-};
+var translate_url = config.translate;
+var db = config.db;
 
 
 app.on('request', function(req, rest) {
@@ -47,7 +36,7 @@ app.on('request', function(req, rest) {
         var time = post.time;
 
         function encrypto(data) {
-            let cipher = crypto.createCipher('aes256', '12shf1');
+            let cipher = crypto.createCipher('aes256', config.aes265Key);
             let encrypto_messgae = cipher.update(data, 'utf8', 'hex');
             encrypto_messgae += cipher.final('hex').toString();
             return encrypto_messgae;
@@ -166,34 +155,3 @@ app.on('request', function(req, rest) {
     });
 });
 app.listen(18989, '0.0.0.0');
-
-/* else if (grep_image.test(msg)) {
-                var grep_url = /[a-zA-z]+:\/\/[^\s]*.\&/i;
-                var url = grep_url.exec(msg)[0];
-                try {
-                    client.imageCensorUserDefined(url, 'url').then(data => {
-                        if (data.error_code) {
-                            console.log(data.error_msg)
-                            rest.end();
-                        } else if (data.conclusion == "合规") {
-                            rest.end();
-                        } else {
-                            console.log(data);
-                            var ban_type = ["", "色情", "性感", "暴恐", "恶心", "", "", "", "政治人物", "敏感词"];
-                            var ban_msg = data.data[0].msg;
-                            console.log(ban_msg);
-                            var reply = { "reply": "你违规了\n违规类型：" + ban_type[data.data[0].type] + "\n违规内容：" + ban_msg + "\n请注意" };
-                            console.log(reply);
-                            rest.write(JSON.stringify(reply));
-                            rest.end();
-                        }
-                    }, error => {
-                        console.log(error)
-                        rest.end();
-                    });
-                } catch (error) {
-                    console.log(error);
-                    rest.end();
-                }
-
-            }*/
