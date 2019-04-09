@@ -7,7 +7,7 @@ fs = require("fs"),
     emoji = require('node-emoji');
 
 var address = config.address;
-var debug = false;
+var debug = 0;
 var grep = /^@[\S\s]*/;
 var date = new Date(),
     year = date.getFullYear(),
@@ -34,32 +34,47 @@ groups["AOI"] = ["634725864"];
 groups["PPH"] = ["118047250", "739889796"];
 groups["IKUNA"] = ["739889796", "118047250"];
 groups["kotobumi"] = ["776234515"];
-groups['all'] = ["118047250", "739889796", "591845717"]
+groups['all'] = ["118047250", "739889796", "591845717"];
+//groups['all'] = ["118047250"];
+
+/* function getJSON(chunk) {
+    let content = {};
+    let raw = chunk.toString();
+    raw = raw.replace(/"/ig, '').replace(/}/ig, '').replace(/{/ig, '');
+    raw = raw.split(",");
+    raw.forEach(value => {
+        let splitit = value.split(":");
+        content[splitit[0]] = splitit[1];
+    });
+    return content;
+} */
 
 function send(type, send_text) {
     var conn = mysql.createConnection(config.db);
     conn.connect();
-    for (let i = 0, len = groups[type].length; i < len; i++) {
-        conn.query('select * from pause where group_id="' + groups[type][i] + '"', (err, result) => {
-            if (result[0]['is_pause'] == undefined || result[0]['is_pause']) {
-                console.log('pause');
-                return null;
-            } else {
-                try {
-                    debug ? console.log(send_text) :
-                        requestLib({
-                            url: address,
-                            method: 'POST',
-                            json: {
-                                group_id: groups[type][i],
-                                message: send_text
-                            }
-                        });
-                } catch (error) {
-                    console.log(error);
+    if (groups[type]) {
+        for (let i = 0, len = groups[type].length; i < len; i++) {
+            conn.query('select * from pause where group_id="' + groups[type][i] + '"', (err, result) => {
+                if (result[0]['is_pause'] == undefined || result[0]['is_pause']) {
+                    console.log('pause');
+                    return null;
+                } else {
+                    try {
+                        debug ? console.log(send_text) :
+                            requestLib({
+                                url: address,
+                                method: 'POST',
+                                json: {
+                                    group_id: groups[type][i],
+                                    message: send_text
+                                }
+                            });
+                    } catch (error) {
+                        console.log(error);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
     conn.end();
 }
@@ -73,7 +88,7 @@ function sendImage(html) {
     split_text.shift();
     split_text.pop();
     let line = split_text.length;
-
+    console.log(split_text);
     let text_width = new Array(),
         width = new Array();
     split_text.forEach((value, index) => {
@@ -113,7 +128,7 @@ function sendImage(html) {
     ctx.textAlign = 'end';
     ctx.textBaseline = 'bottom';
     ctx.fillStyle = '#272727';
-    ctx.fillText("Power By node-canvas, program by Gerard V3.0", canvas_width, 10);
+    ctx.fillText("Power By node-canvas, program by Gerard V0.4-beta", canvas_width, 10);
 
     ctx.font = '30px "NotoSans"';
     ctx.textAlign = 'center';
@@ -145,65 +160,53 @@ function sendImage(html) {
 
 
 app.on('request', function(req, res) {
-    let dataDec
+    var content = "";
     req.on('data', function(chunk) {
-        dataDec = chunk.toString();
+        //content = getJSON(chunk);
+        content += chunk;
+        content = JSON.parse(content);
     });
 
     req.on('end', function() {
-        console.log(dataDec);
-        if (dataDec != (null | undefined | '')) {
-            let content = JSON.parse(dataDec);
-            let title = content.Title,
-                postby = content.postBy,
-                postat = content.postat,
-                url = content.url,
-                type = content.type,
-                text = content.text,
-                from = content.from;
-            if (text && grep.test(text)) {
-                res.writeHead(403, { 'Content-type': 'text/html' });
-                res.end();
-            } else
-            if (!url | !type) {
-                res.writeHead(503, { 'Content-type': 'text/html' });
-                res.end();
-            } else {
-                res.writeHead(200, { 'Content-type': 'text/html' });
-                switch (from) {
-                    case 'video':
-                        let send_text = `${postby} |更新了：\n--------------\n${title}\n--------------\n视频地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
-                        break;
-                    case 'twitter':
-                        let send_text = `${postby} |发推了：\n--------------\n${text}\n--------------\n原文地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
-                        break;
-                    default:
-                        let send_text = `${postby} |更新了：\n--------------\n${title}\n--------------\n视频地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
-                        break;
-                }
-                //let urls = getUrl(send_text, type);
-                //console.log(send_text);
-                //console.log(urls);
-
-                send(type, send_text);
-
-            }
-
-            fs.writeFile('./data.log', "\n" + send_text + "\n", { flag: 'a+', encoding: 'utf-8', mode: '0666' }, function(err, fd) {
-                if (err) { return console.error(err); }
-            });
-            fs.writeFile('./data.log', post, { flag: 'a+', encoding: 'utf-8', mode: '0666' }, function(err, fd) {
-                if (err) { return console.error(err); }
-            });
-            res.write("200 OK");
-            res.end();
-
-        } else {
-            fs.writeFile('./data.log', "\nerror\n", { flag: 'a+', encoding: 'utf-8', mode: '0666' });
+        console.log(content);
+        let postby = content.postBy,
+            postat = content.postat,
+            url = content.url,
+            type = content.type,
+            text = content.text,
+            from = content.from;
+        if (text && grep.test(text)) {
             res.writeHead(403, { 'Content-type': 'text/html' });
-            res.write("error");
-            res.end()
+            res.end();
+        } else {
+            res.writeHead(200, { 'Content-type': 'text/html' });
+            switch (from) {
+                case 'video':
+                    var send_text = `${postby} |更新了：\n--------------\n${title}\n--------------\n视频地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
+                    break;
+                case 'twitter':
+                    var send_text = `${postby} |发推了：\n--------------\n${text}\n--------------\n原文地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
+                    break;
+                default:
+                    var send_text = `${postby} |更新了：\n--------------\n${title}\n--------------\n视频地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
+                    break;
+            }
+            //let urls = getUrl(send_text, type);
+            //console.log(send_text);
+            //console.log(urls);
+
+            send(type, send_text);
+
         }
+
+        fs.writeFile('./data.log', "\n" + send_text + "\n", { flag: 'a+', encoding: 'utf-8', mode: '0666' }, function(err, fd) {
+            if (err) { return console.error(err); }
+        });
+        fs.writeFile('./data.log', content, { flag: 'a+', encoding: 'utf-8', mode: '0666' }, function(err, fd) {
+            if (err) { return console.error(err); }
+        });
+        //res.write("200 OK");
+        res.end();
 
     });
 });
@@ -212,13 +215,15 @@ app.listen(8080, '0.0.0.0');
 
 const timeline = http.createServer();
 timeline.on('request', (req, res) => {
-    let content
+    //let content = {};
     req.on('data', (chunk) => {
+        //content = getJSON(chunk);
         content = JSON.parse(chunk.toString());
     });
     req.on('end', () => {
         let name = content.name,
             text = emoji.replace(content.text, (emoji) => '');
+        console.log(text);
         if (name != "hololivetv") {
             res.writeHead(403);
             res.end()
