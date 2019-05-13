@@ -3,7 +3,7 @@ const request = require('request'),
     fs = require('fs'),
     { registerFont, createCanvas, loadImage, Image } = require('canvas'),
     config = require('./config.json'),
-    flatten = require('flat'),
+    sharp = require("sharp"),
     mysql = require('mysql'),
     emoji = require('node-emoji'),
     api_adress = 'https://hiyoko.sonoj.net/f/avtapi/schedule/fetch_curr';
@@ -155,25 +155,31 @@ function test() {
                     ctx.font = '15px "NotoSans"';
                     ctx.textAlign = 'start';
                     ctx.textBaseline = 'bottom';
+                    //图片
                     let time = data.scheduled_start_time,
                         year = String((new Date(time)).getFullYear()),
                         month = String((new Date(time)).getMonth()).padStart(2, 0),
                         day = String((new Date(time)).getDate()).padStart(2, 0);
 
-                    let img = new Image();
-                    img.onload = () => {
-                        console.log("susses");
-                        ctx.drawImage(img, 0, 0, 320, 180, position_row_x, position_line_in_y, 320, 180);
-                    };
-                    img.onerror = (err) => {
-                        console.log(err);
-                        ctx.font = '30px "NotoSans"';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'top';
-                        ctx.fillStyle = 'grey';
-                        ctx.fillText("图片加载失败", 90 + position_row_x, 10 + position_line_in_y);
-                    };
-                    img.src = `./image/${year}${month}${day}/${data.video_id}.jpeg`;
+                    fs.readFile(`./image/${year}${month}${day}/${data.video_id}.png`, (err, buf) => {
+                        if (err) console.log(err);
+                        let img = new Image();
+                        img.onload = () => {
+                            console.log("susses");
+                            ctx.drawImage(img, position_row_x, position_line_in_y);
+                        };
+                        img.onerror = (err) => {
+                            console.log(err);
+                            ctx.font = '30px "NotoSans"';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+                            ctx.fillStyle = 'grey';
+                            ctx.fillText("图片加载失败", 90 + position_row_x, 10 + position_line_in_y);
+                        };
+                        //img.src = sharp(buf).png().toBuffer()
+                        img.src = buf;
+                    })
+
                     //画一个渐变半透明的白色框以方便写文字
                     white = '#ffffff';
                     for (let i = 0; i < 90; i++) {
@@ -211,6 +217,7 @@ function test() {
         //输出
         let base64 = canvas.toDataURL().substr(22);
         send(base64);
+        canvas.createPNGStream().pipe(fs.createWriteStream('./test.png', { autoClose: 1 }).on("finish", () => console.log('The PNG file was created.')));
     });
 }
 
@@ -219,23 +226,27 @@ function getImage(element) {
         year = String((new Date(time)).getFullYear()),
         month = String((new Date(time)).getMonth()).padStart(2, 0),
         day = String((new Date(time)).getDate()).padStart(2, 0),
-        imagename = `./image/${year}${month}${day}/${element.video_id}.jpeg`;
+        imagename = `./image/${year}${month}${day}/${element.video_id}`;
     fs.exists(`./image/${year}${month}${day}`, exist => {
-        exist ? null : fs.mkdir(`./image/${year}${month}${day}`, err => { if (err) console.log(err) });
-    });
-    try {
-        request(element.thumbnail_url, err => {
-            if (err) console.log(err);
-        }).pipe(fs.createWriteStream(imagename, { autoClose: 1 }));
+        if (!exist) {
+            try {
+                request(element.thumbnail_url, (err, buf) => {
+                    if (err) console.log(err);
+                    sharp(buf).png().toFile(imagename + ".png").catch(err => { console.log(err) });
+                });
 
-    } catch (error) {
-        console.log(error);
-        let readStream = fs.createReadStream("./image/404.jpeg", { autoClose: 1 });
-        readStream.pipe(writeStream);
-    } finally {
-        //writeStream.end();
-        null
-    }
+            } catch (error) {
+                console.log(error);
+                fs.readFile("./image/404.jepg", (err, buf) => {
+                    if (err) console.log(err);
+                    sharp(buf).png().toFile(imagename + ".png").catch(err => { console.log(err) });
+                });
+            } finally {
+                //writeStream.end();
+                null
+            }
+        } else { null }
+    });
 }
 
 function drawBackground(ctx, color) {

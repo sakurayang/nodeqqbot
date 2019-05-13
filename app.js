@@ -1,9 +1,10 @@
-const http = require("http");
-fs = require("fs"),
+const http = require("http"),
+    fs = require("fs"),
     requestLib = require("request"),
     app = http.createServer(),
     mysql = require('mysql'),
-    config = require("./config.json"), { registerFont, createCanvas } = require('canvas'),
+    config = require("./config.json"), 
+    { registerFont, createCanvas } = require('canvas'),
     emoji = require('node-emoji');
 
 var address = config.address;
@@ -160,11 +161,11 @@ function sendImage(html) {
 
 
 app.on('request', function(req, res) {
-    var content = "";
+    var post = "";
     req.on('data', function(chunk) {
         //content = getJSON(chunk);
-        content += chunk;
-        content = JSON.parse(content);
+        post += chunk;
+        content = JSON.parse(post);
     });
 
     req.on('end', function() {
@@ -182,13 +183,40 @@ app.on('request', function(req, res) {
             res.writeHead(200, { 'Content-type': 'text/html' });
             switch (from) {
                 case 'video':
-                    var send_text = `${postby} |更新了：\n--------------\n${title}\n--------------\n视频地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
+                    var send_text = 
+`${postby} |更新了：
+--------------
+${title}
+--------------
+视频地址：${url}
+--------------
+更新于：${postat}
+--------------
+提示：可使用.f:zh:xxxxxxx来翻译`;
                     break;
                 case 'twitter':
-                    var send_text = `${postby} |发推了：\n--------------\n${text}\n--------------\n原文地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
+                    var send_text = 
+`${postby} |发推了：
+--------------
+${text}
+--------------
+原文地址：${url}
+--------------
+更新于：${postat}
+--------------
+提示：可使用.f:zh:xxxxxxx来翻译`;
                     break;
                 default:
-                    var send_text = `${postby} |更新了：\n--------------\n${title}\n--------------\n视频地址：${url}\n--------------\n更新于：${postat}\n--------------\n提示：可使用!f:zh:xxxxxxx来翻译`;
+                    var send_text = 
+`${postby} |更新了：
+--------------
+${title}
+--------------
+视频地址：${url}
+--------------
+更新于：${postat}
+--------------
+提示：可使用.f:zh:xxxxxxx来翻译`;
                     break;
             }
             //let urls = getUrl(send_text, type);
