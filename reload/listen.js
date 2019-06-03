@@ -206,7 +206,7 @@ app.on('request', function (req, rest) {
                             conn
                                 .table('pause')
                                 .where({
-                                    group_idLgroup_id
+                                    group_id=group_id
                                 }).update({
                                     is_pause: false
                                 }).then(affectRow => {
