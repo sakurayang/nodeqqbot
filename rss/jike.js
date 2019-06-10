@@ -1,61 +1,123 @@
 const request = require('request'),
-    randomUA = require('random-fake-useragent'),
-    schedule = require('node-schedule'),
-    fs = require('fs'),
     route_config = require('./route.json'),
-    route = require('./route.js'),
-    send = require('../plugin/send');
+    route = require('./route.js');
 
-var rule = route_config.jike[0].schedule;
-//每十分钟一次
-
-
-
-function check() {
-    let options = new route.Jike(route_config.jike[0].id, 'topic');
-    request(options.url, options.uri, )
+example_topic = {
+    "data": Array[{
+        "id": String,
+        "type": String,
+        "content": String,
+        "urlsInText": Array,
+        "status": String,
+        "isCommentForbidden": Boolean,
+        "likeCount": Number,
+        "commentCount": Number,
+        "repostCount": Number,
+        "shareCount": Number,
+        "topic": /*Object*/ {
+            "id": String,
+            "type": String,
+            "content": String,
+            "subscribersCount": Number,
+            "approximateSubscribersCount": String,
+            "briefIntro": String,
+            "squareP icture": {
+                "thumbnailUrl": String,
+                "middlePicUrl": String,
+                "picUrl": String,
+                "format": String,
+                "averageHue": Number || String //0xbbcfa
+            },
+            "enablePictureComments": Boolean,
+            "enablePictureWatermark": Boolean,
+            "likeIcon": "shock",
+            "isValid": Boolean,
+            "topicType": String,
+            "operateStatus": String,
+            "isCommentForbidden": Boolean,
+            "tips": {
+                "inDraft": String,
+                "inComment": String
+            },
+            "lastMessagePostTime": DateString, //ISOFormat
+            "squarePostUpdateTime": DateString, //ISOFormat
+            "subscribersName": String,
+            "s ubscribersAction": String,
+            "subscribersTextSuffix": String,
+            "subscribersDescription": String,
+            "su bscribedStatusRawValue": Number,
+            "inShortcuts": Boolean,
+            "isUserTopicAdmin": Boolean,
+            "intro": String
+        },
+        "pictures": [{
+            "thumbnailUrl": String,
+            "smallPicUrl": String,
+            "middlePicUrl": String,
+            "picUrl": String, //文章图片
+            "format": String,
+            "averageHue": String,
+            "cropperPosX": Number,
+            "cropperPosY": Number,
+            "width": Number,
+            "height": Number
+        }],
+        "collected": Boolean,
+        "collectTime": null,
+        "user": {
+            "id": String,
+            "username": String,
+            "screenName": String,
+            "cr eatedAt": DateString, //ISOFormat
+            "updatedAt": DateString, //ISOFormat
+            "isVerified": Boolean,
+            "verifyMessage": String,
+            "briefIntro": String,
+            "avatarImage": {
+                "thumbnailUrl": String,
+                "smallPicUrl": String,
+                "picUrl": String,
+                "format": String,
+                "badgeUrl": String
+            },
+            "profileImageUrl": String,
+            "trailingIcons": Array,
+            "statsCount": {
+                "topicSubscribed": Number,
+                "topicCreated": Number,
+                "followedCount": Number,
+                "followingCount": Number,
+                "highlightedPersonalUpdates": Number,
+                "liked": Number
+            },
+            "isDefaultScreenName": Boolean,
+            "bio": String,
+            "gender": String,
+            "ref": String
+        },
+        "createdAt": DateString, //ISOFormat
+        "messageId": String,
+        "rollouts": {
+            "wmpShare": {
+                "id": String,
+                "path": String
+            }
+        },
+        "likeIcon": String,
+        "readTrackInfo": {
+            "feedType": String
+        }
+    }]
 }
 
 
-
-
-
-
-schedule.scheduleJob('check', rule, () => {
-    let options = {
-        "credentials": "omit",
-        "headers": {
-            "User-Agent": randomUA.getRandom(),
-            "Accept": "application/json",
-            "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-            "App-Version": "5.3.0",
-            "Content-Type": "application/json",
-            "platform": "web",
-            "x-jike-access-token": ""
-        },
-        "referrer": "https://web.okjike.com/topic/564ab85208987312006e13ab/official",
-        "body": "{\"loadMoreKey\":null,\"topic\":\"564ab85208987312006e13ab\",\"limit\":1}",
-        "method": "POST",
-        "mode": "cors"
-    };
-    request('https://app.jike.ruguoapp.com/1.0/messages/history', options, (err, res) => {
-        if (err || res.statusCode != 200) console.error(new Error(err));
-        let data = res.body.data[0],
-            id = data.id,
-            content = data.content,
-            picture = data.pictures[0].picUrl,
-            time = (new Date(data.createdAt)).toLocaleString;
-
-        fs.stat(`./${id}`, err => {
-            if (err) {
-                fs.writeFile(`./${id}`, '', err => {
-                    if (err) throw err
-                });
-                let text = `Breaking News 重大的突发新闻\n--------\n发布于: ${time}\n--------\n${content}\n--------\n地址: https://web.okjike.com/topic/564ab85208987312006e13ab/official`;
-                send.private('1304274443', text);
-            } else {
-                true;
-            }
-        })
-    })
-})
+async function check(_id, type) {
+    let options = new route.Jike(_id, type);
+    await request(options.url, options.uri, (err, res) => {
+        if (err || res.statusCode != 200) {
+            return new Error(err)
+        } else {
+            return new Error(`错误：${res.error}`);
+        }
+    });
+}

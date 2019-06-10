@@ -7,8 +7,9 @@ class Uri {
      * @param {String{POST|GET}} method 调用方法
      * @param {JSON|String} header
      * @param {JSON|String} body
+     * @param {JSON|String} others
      */
-    constructor(address, method = "POST", header, body = {}) {
+    constructor(address, method = "POST", header, body = {}, others = {}) {
         this.address = String(address);
         this.headers = (typeof (header) == 'undefined' || header == {}) ? {
             "Accept": "application/json"
@@ -18,14 +19,14 @@ class Uri {
         this.body = ((body == null) || (typeof (body) == 'undefined')) ? {
             limit: 1
         } : body;
+        this.others = ((others == null) || (typeof (others) == 'undefined')) ? {} : others;
         return (this.method == 'POST') ? {
             url: this.address,
             options: {
                 method: this.method,
                 headers: this.headers,
-                body: {
-                    ...this.body
-                }
+                body: this.body,
+                ...this.others,
             }
         } : (this.method == 'GET') ? {
             url: this.address,
@@ -53,28 +54,6 @@ function Jike(id, type) {
         (String(_type).toLocaleUpperCase() == 'DAILY') ?
         'https://app.jike.ruguoapp.com/1.0/dailies/list' :
         'error';
-    let base_headers = {
-        "User-Agent": 'randomUA.getRandom()',
-        "Accept": "application/json",
-        "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-        "App-Version": "5.3.0",
-        "Content-Type": "application/json",
-        "platform": "web",
-        "x-jike-access-token": ""
-    };
-    let headers = (String(_type).toLocaleUpperCase() == 'TOPIC') ? {
-            "referrer": `https://m.okjike.com/topic/${_id}/official`,
-            ...base_headers
-        } :
-        (String(_type).toLocaleUpperCase() == 'USER') ? {
-            "referrer": `http://m.okjike.com/users/${_id}`,
-            ...base_headers
-        } :
-        (String(_type).toLocaleUpperCase() == 'DAILY') ? {
-            "referrer": `http://m.okjike.com/dailies/`,
-            ...base_headers
-        } :
-        base_headers;
     let method = (String(_type).toLocaleUpperCase() == 'TOPIC') ?
         'POST' :
         (String(_type).toLocaleUpperCase() == 'USER') ?
@@ -90,11 +69,13 @@ function Jike(id, type) {
         (String(_type).toLocaleUpperCase() == 'USER') ? {
             "username": _id,
             "limit": 1,
-        } : {}
-    let options = new Uri(url, method, headers, body);
-    return {
-        ...options
-    };
+        } : {};
+    let options = JSON.parse(JSON.stringify(new Uri(url, method, {
+        "User-Agent": randomUA.getRandom()
+    }, body, {
+        json: true
+    })));
+    return options;
 }
 
 

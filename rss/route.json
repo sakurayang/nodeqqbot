@@ -5,7 +5,7 @@
         "id": "564ab85208987312006e13ab",
         "schedule": "*/10 * * * *",
         "apiToken": null,
-        "method": "POST"
+        "type": "topic"
     }],
     "youtube": {}
 }
