@@ -35,6 +35,20 @@ class Uri {
             headers: this.headers
         };
     }
+    getBody(type){
+        switch (type) {
+            case "private":
+            default:
+                return "user_id";
+                break;
+            case "group":
+                return "group_id";
+                break;
+            case "disscuss":
+                return "discuss_id";
+                break;
+        }
+    }
 }
 
 
@@ -84,7 +98,7 @@ function sendGroupMsg(group, text) {
  * @param {String} text 
  */
 
-function sendGroupMsg(group, text) {
+function sendGroupMsgAnyway(group, text) {
     let _group = Array.isArray(group) ? group : [group];
     _group.forEach(id => {
         send("group", id, text);
@@ -117,9 +131,23 @@ function sendDisscussMsg(disscuss, text) {
     });
 }
 
+function boardcast(text) {
+    request("http://localhost:5700/get_group_list/",(err,res)=>{
+        if (err) throw err;
+        let group = JSON.parse(res.body).data;
+        let groups=[];
+        for (let i = 0, len = group.length; i < len; i++) {
+            let id = group[i].group_id;
+            groups[i] = id;
+        }
+        sendGroupMsgAnyway(groups,text);
+    });
+}
+
 module.exports = {
     group: sendGroupMsg,
     groupAnyway: sendGroupMsgAnyway,
     private: sendPrivateMsg,
     disscuss: sendDisscussMsg,
+    boardcast: boardcast
 }
