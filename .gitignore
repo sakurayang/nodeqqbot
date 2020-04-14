@@ -61,7 +61,7 @@ typings/
 .next
 
 # self defind
-config.json
+config.js
 demo.js
 test.txt
 *.bak
