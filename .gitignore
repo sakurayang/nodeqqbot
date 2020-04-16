@@ -66,3 +66,4 @@ demo.js
 test.txt
 *.bak
 *.png
+.vscode/
