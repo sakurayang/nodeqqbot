@@ -1,11 +1,10 @@
-const config = require("../../config");
-const utils = require("../../utils");
+const config = require("../config");
+const utils = require("./utils");
+const logger = require("./logger").getLogger("database");
 
 const g_path = config.data_path;
 const debug = config.debug;
 const parseObject = utils.parseObject;
-
-const logger = utils.logger.getLogger("database");
 
 const getKnexOptions = filename => {
     return {
