@@ -1,4 +1,4 @@
-const request = require("request-promise-native");
+const axios = require("axios");
 const flatten = require("flat");
 const fs = require("fs");
 const {
@@ -7,6 +7,8 @@ const {
 } = require('canvas');
 const schedule = require("node-schedule");
 
+const { db } = require('./db');
+const database = new db("./schedule.db");
 
 const ADDRESS = "https://hiyoko.sonoj.net/f/avtapi/schedule/fetch_curr";
 const config = require('../config.json');
@@ -34,17 +36,12 @@ a = {
     "video_id": "mL77HrcsR6A",
 }
 
-registerFont("./fonts/NotoSansCJKjp-Regular.otf", {
-    "family": "NotoSans"
-});
 registerFont("./fonts/NotoSansCJKsc-Regular.otf", {
     "family": "NotoSans"
 });
-
-var dailyReport = new schedule.RecurrenceRule();
-dailyReport.hour = [0, 6, 12, 18];
-dailyReport.minute = 5;
-dailyReport.second = 5;
+registerFont("./fonts/NotoSansCJKjp-Regular.otf", {
+    "family": "NotoSans"
+});
 
 weekdays = ['日', '一', '二', '三', '四', '五', '六', '日'];
 jpweekdays = ['日', '月', '火', '水', '木', '金', '土', '日'];
@@ -92,7 +89,7 @@ class Table {
         if (data.hour in this.elements) {
             this.elements[data.hour].push(l_html);
         } else {
-            this.elements[data.hour] = [l_html, ];
+            this.elements[data.hour] = [l_html,];
         }
     }
     html() {
@@ -114,24 +111,33 @@ class Table {
     }
 }
 
+/**
+ * 
+ * @param {Date} unix 
+ * @returns {"YYYY-MM-DD HH:MM:SS"}
+ */
 function getDate(unix) {
     if (!unix || (typeof (unix) != "number" && isNaN(unix))) return false;
     let date = new Date(unix);
     return date.getFullYear() +
         "-" + date.getMonth().toString().padStart(2, '0') +
-        "-" + date.getDate().toString().padStart(2, '0') +
+        "-" + date.getDate().toString().padStart(2, '0') /*+
         " " + date.getHours().toString().padStart(2, '0') +
-        "-" + date.getMinutes().toString().padStart(2, '0') +
-        "-" + date.getSeconds().toString().padStart(2, '0');
+        ":" + date.getMinutes().toString().padStart(2, '0') +
+        ":" + date.getSeconds().toString().padStart(2, '0')*/;
 }
 
+/**
+ * 不含最大值，含最小值
+ * @param {Number} min 
+ * @param {Number} max 
+ * @returns {Number}
+ */
 function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min)) + min;
-    //不含最大值，含最小值
 }
-
 
 /**
  * 
@@ -139,7 +145,7 @@ function getRandomInt(min, max) {
  * @returns {{
  *  ch_id: String,
  *  ch_type: Number,
- *  groups: String,
+ *  groups: String,-+
  *  groups_name: String,
  *  scheduled_start_time: Number,
  *  streamer_id: String,
@@ -149,40 +155,35 @@ function getRandomInt(min, max) {
  *  video_id:String,
  *}}
  */
-async function getInfo(unix = Date.now()) {
+async function getInfo(unix = Date.now() + 6000) {
     unix = (!unix || (typeof (unix) != "number" && isNaN(unix))) ? Date.now() : unix;
-    let start = (getDate(unix));
-    let end = (start ?
-        start.substring(0, 8) + String(Number(start.substring(8, 2)) + 1) + start.substring(10) :
-        false);
-    let options = {
-        url: ADDRESS,
-        method: "POST",
-        json: true,
-        headers: {
-            Host: "hiyoko.sonoj.net",
-            Connection: "keep-alive",
-            Accept: "application/json;charset=UTF-8",
-            "Cache-Cotrol": "public, max-age=300",
-            Origin: "https://hiyoko.sonoj.net",
-            "Sec-Fetch-Mode": "cors",
-            "Content-Type": "application/json",
-            "Referer": "https://hiyoko.sonoj.net/schedule",
-        },
-        body: {
-            "filter_state": "{ \
-                \"open\": true, \
-                \"selectedGroups\": \"\", \
-                \"following\": false, \
-                \"text\": \"\"}",
-            start: start,
-            end: end
-        }
-    }
-    let data = await request(options);
-    return Promise.resolve(data.schedules);
+    let start = getDate(unix);
+    let end = getDate(unix + 24 * 60 * 60 * 1000);
+    console.log({
+        "filter_state": "{\"open\": false,\"selectedGroups\": \"\",\"following\": false,\"text\": \"\"}",
+        "start": start,
+        "end": end
+    })
+    debugger;
+    // let data = await axios.post(ADDRESS, {
+    //     headers: {
+    //         Cookie: 'autoReadme=DONE; auto-readme=AGREE',
+    //         Referer: 'https://hiyoko.sonoj.net/schedule/',
+    //         Origin: 'https://hiyoko.sonoj.net/'
+    //     },
+    //     data: {
+    //     "filter_state": "{\"open\": false,\"selectedGroups\": \"\",\"following\": false,\"text\": \"\"}",
+    //     "start": start,
+    //     "end": end
+    //     }
+    // }).then(data => console.log(data.data));
+    axios.post('https://hiyoko.sonoj.net/f/avtapi/schedule/fetch_curr', {
+        "filter_state": "{\"open\": false,\"selectedGroups\": \"\",\"following\": false,\"text\": \"\"}",
+        "start": start,
+        "end": end
+    }).then(res => console.log(res));
+    //return Promise.resolve(data.data.schedules);
 }
-
 /**
  * 
  * @param {JSON[]} data 
@@ -205,7 +206,7 @@ async function getInfo(unix = Date.now()) {
  */
 function parseInfo(data) {
     let time_line = {};
-    let Today = Date.now().getDate();
+    let Today = new Date(Date.now()).getDate();
     for (const item of data) {
         let item_date = new Date(item.scheduled_start_time);
         let day = item_date.getDate();
@@ -215,13 +216,17 @@ function parseInfo(data) {
             time_line[hour].data.push(hour);
             time_line[hour].count += 1;
         } else {
-            time_line[hour].data = [hour, ];
+            time_line[hour].data = [hour,];
             time_line[hour].count = 1;
         }
     }
     return Object.freeze(time_line);
 }
 
+/**
+ * get a canvas
+ * @param {*} data 
+ */
 function getCanvas(data) {
     let hourly_live_count = [];
     for (const item of data) {
@@ -240,13 +245,25 @@ function getCanvas(data) {
     };
 }
 
-function writeMultiText(ctx, text, x, y, width, font, fillStyle, baseline) {
+/**
+ * 
+ * @param {Object} ctx 
+ * @param {String} text 
+ * @param {Number} x start point
+ * @param {Number} y start point
+ * @param {Number} width max width
+ * @param {String} font font style string
+ * @param {String} fillStyle font color
+ * @param {String} baseline font baseline
+ * @returns {null}
+ */
+function writeMultiText(ctx, text, x, y, width, font = '20px "NotoSans"', fillStyle = "black", baseline = "bottom") {
     let chr = text.split("");
     let temp = "";
     let row = [];
-    ctx.font = font || '20px "NotoSans"';
-    ctx.fillStyle = fillStyle || "black";
-    ctx.textBaseline = baseline || "bottom";
+    ctx.font = font;
+    ctx.fillStyle = fillStyle;
+    ctx.textBaseline = baseline;
     for (let a = 0; a < chr.length; a++) {
         if (ctx.measureText(temp).width < width) {
             ;
@@ -268,6 +285,7 @@ function writeMultiText(ctx, text, x, y, width, font, fillStyle, baseline) {
  * @param {Number} c_w Stand for Canvas Width
  * @param {Number} c_h Stand for Canvas Height
  * @param {Number[]} hours contain hours
+ * @returns {null}
  */
 function fillBackground(ctx, c_w, c_h, hours, hour_counts) {
     let lines = hours.length;
@@ -318,6 +336,7 @@ function fillBackground(ctx, c_w, c_h, hours, hour_counts) {
  * @param {Object} ctx 
  * @param {Number} c_w Stand for Canvas Width
  * @param {Number} c_h Stand for Canvas Height
+ * @returns {null}
  */
 function fillCommentText(ctx, c_w, c_h) {
     //Version & Tips
@@ -345,7 +364,7 @@ function fillCommentText(ctx, c_w, c_h) {
     ctx.font = '20px "NotoSans"';
     ctx.textAlign = 'end';
     ctx.fillStyle = '#272727';
-    ctx.fillText(`${getDate(Date.now()).substr(0,10)} 星期${weekdays[new Date().getDay()]} / ${weekdays[new Date().getDay()]}曜日`, c_w, c_h);
+    ctx.fillText(`${getDate(Date.now()).substr(0, 10)} 星期${weekdays[new Date().getDay()]} / ${weekdays[new Date().getDay()]}曜日`, c_w, c_h);
 }
 
 function writeDetilText(ctx, data, position_row_x, position_line_in_y) {
@@ -370,38 +389,62 @@ function writeDetilText(ctx, data, position_row_x, position_line_in_y) {
     ctx.fillRect(position_row_x + 320, position_line_in_y, 2, 182);
 }
 
-
-schedule.scheduleJob({
-    hour: 0,
-    minute: 1
-}, async () => {
+async function getImage() {
     let date = Date.now();
-    let schedule_data = parseInfo(await getInfo(date));
-    fs.writeFile(`./schedule/${year}${month}${String(day).padStart(2, 0)}.json`,
+    let schedule_data = await getInfo(date);
+    console.log(schedule_data)
+    //schedule_data = parseInfo(schedule_data);
+
+    //record
+    fs.writeFile(`./schedule/test.json`,
         `${JSON.stringify(flatten(schedule_data))}`, (err) => {
             return new Error(err)
         });
-    let canvas = getCanvas(schedule_data);
-    let ctx = canvas.ctx;
-    let width = canvas.width;
-    let height = canvas.height;
 
-    fillBackground(ctx, width, height, Object.keys(schedule_data), (() => {
-        let hourly_live_count = [];
-        for (const item of schedule_data) {
-            hourly_live_count.push(item.count);
-        }
-        return hourly_live_count;
-    })());
-    fillCommentText(ctx, width, height);
+    // for (const single_data of schedule_data) {
+    //     for (const stream of single_data) {
+    //         database.insert("live", {
+    //             streamer_name: stream.streamer_name,
+    //             streamer_id: stream.streamer_id,
+    //             start_time: stream.start_time,
+    //             title: stream.title,
+    //             ch_type: stream.ch_type,
+    //             video_id: stream.video_id
+    //         });
+    //     }
+    // }
+    // let canvas = getCanvas(schedule_data);
+    // let ctx = canvas.ctx;
+    // let width = canvas.width;
+    // let height = canvas.height;
 
-    for (const schedule_item in schedule_data) {
-        let stream_info = {
-            ch_type: schedule_item.data.ch_type,
-            scheduled_start_time: new Date(schedule_item.data.scheduled_start_time).toTimeString().substr(0, 5),
-            streamer_name: schedule_item.data.streamer_name,
-            title: schedule_item.data.title
-        }
-        writeDetilText(ctx, stream_info)
-    }
-})
+    // fillBackground(ctx, width, height, Object.keys(schedule_data), (() => {
+    //     let hourly_live_count = [];
+    //     for (const item of schedule_data) {
+    //         hourly_live_count.push(item.count);
+    //     }
+    //     return hourly_live_count;
+    // })());
+    // fillCommentText(ctx, width, height);
+
+    // for (const schedule_item in schedule_data) {
+    //     let stream_info = {
+    //         ch_type: schedule_item.data.ch_type,
+    //         scheduled_start_time: new Date(schedule_item.data.scheduled_start_time).toTimeString().substr(0, 5),
+    //         streamer_name: schedule_item.data.streamer_name,
+    //         title: schedule_item.data.title
+    //     }
+    //     writeDetilText(ctx, stream_info)
+    // }
+}
+let dailyReport = new schedule.RecurrenceRule();
+dailyReport.hour = [0, 6, 12, 18];
+dailyReport.minute = 5;
+dailyReport.second = 5;
+
+// schedule.scheduleJob({
+//     hour: 0,
+//     minute: 1
+// }, getImage())
+
+getImage();

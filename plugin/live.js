@@ -57,9 +57,6 @@ function drawText(ctx, t, x, y, w) {
     for (var b = 0; b < row.length; b++) { ctx.fillText(row[b], x, y + (b + 1) * 20); }
 }
 
-
-
-
 function drawBackgroundText(ctx, canvas_width, canvas_height, year, month, day, week) {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas_width, canvas_height);

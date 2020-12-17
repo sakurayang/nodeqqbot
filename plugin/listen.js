@@ -1,9 +1,7 @@
 const http = require("http"),
-    he = require("he"),
     fs = require("fs"),
-    request = require("request"),
     mysql = require("node-mysql-promise"),
-    send = require('./send'),
+    translate = require("./translate.js"),
     config = require("../config.json");
 
 const grep_command = /^(。|\.)[\Ss]*/;

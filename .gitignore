@@ -67,3 +67,4 @@ test.txt
 *.bak
 *.png
 .vscode/
+*.db
