@@ -3,4 +3,12 @@ node_modules
 config.js
 *.log
 *.db
-*/.idea/
+.idea/
+.status
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+test/
