@@ -1,10 +1,10 @@
 const Chance = require("chance");
-const db = require("@root/core/libs/db");
+const db = require("@core/libs/db");
 const knex = db.getCore();
-(async ()=>{
+(async () => {
     let isTableExist = await knex.schema.hasTable("nickname");
     if (!isTableExist) {
-        await knex.schema.createTable("nickname",table=>{
+        await knex.schema.createTable("nickname", table => {
             table.string("nick").notNullable();
             table.bigInteger("group").notNullable();
             table.bigInteger("qq").notNullable();
@@ -12,7 +12,7 @@ const knex = db.getCore();
             table.index("id");
         });
     }
-})()
+})();
 
 function roll(dice) {
     let chance = new Chance(Date.now());
@@ -28,14 +28,14 @@ async function nn(params, sender, msg) {
     if (!prev_name) {
         let result = await db.insert("nickname", {
             group,
-            id,
+            qq: id,
             nick: now_nick
         });
         prev_name = sender.card || sender.nickname || sender.user_id;
         if (result.code !== 0) return `数据库出错，请联系管理员`;
         return `${prev_name} 成功将昵称更改为 ${now_nick}`;
     } else {
-        let result = db.update("nickname", {group, qq:id}, {nick: now_nick});
+        let result = db.update("nickname", {group, qq: id}, {nick: now_nick});
         if (result.code !== 0) return `数据库出错，请联系管理员`;
         return `${prev_name.result[0].nick} 成功将昵称更改为 ${now_nick}`;
     }
@@ -49,12 +49,12 @@ async function getNick(group, id) {
 async function r(params, sender, msg) {
     let command = msg.message;
     let id = sender.user_id;
-    let name = await getNick(msg.group_id, id) || sender.card || sender.nickname;
+    let name = (await getNick(msg.group_id, id)) || sender.card || sender.nickname;
     let str = command.replace(/[.。]r/i, "");
     let chance = new Chance(Date.now());
     let time = str.split(/d/i)[0];
     let roll = chance.rpg(str);
-    let result = Number(time)===1 ? roll.join("") : `{${roll.join(",")}}=${roll.reduce((a,b)=>a+b,0)}`;
+    let result = Number(time) === 1 ? roll.join("") : `{${roll.join(",")}}=${roll.reduce((a, b) => a + b, 0)}`;
     return `${name}掷骰 r${str}=${result}`;
 }
 
@@ -65,9 +65,9 @@ module.exports = {
         r,
         format: /r[\d]+d((\d{1,2})|100)$/
     },
-    nn:{
-        decs:"nickname",
-        docs:"nickname",
+    nn: {
+        decs: "nickname",
+        docs: "nickname",
         nn,
         format: /nn[\w]*/
     }

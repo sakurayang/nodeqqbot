@@ -71,6 +71,6 @@ interface GroupMessage extends Message {
     readonly sender: GroupSender;
 }
 
-declare async function parser(msg: PrivateMessage | GroupMessage): string;
+declare function parser(msg: PrivateMessage | GroupMessage): string;
 
 export =parser;

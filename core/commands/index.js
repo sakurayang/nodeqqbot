@@ -1,4 +1,4 @@
-const logger = require("@root/core/libs/logger").getLogger("core");
+const logger = require("@core/libs/logger").getLogger("core");
 const CommandPath = require("require-all")({
     dirname: __dirname + "/",
     filter: /(.+command)\.js$/,

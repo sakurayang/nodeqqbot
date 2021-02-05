@@ -41,9 +41,9 @@ function parseObject(obj) {
  * @param {String} params
  * @param {Number} limit
  * @param {Number} offset
- * @return {JSON}
+ * @return {{code:Number,msg:String,result:Array}}
  */
-async function select(table, params = "", limit = 1, offset = -1) {
+async function select(table, params = "", limit = 1, offset = 0) {
     if (debug) logger.info(`[select] [${table}] params: ${JSON.stringify(params)}, limit: ${limit}, offset: ${offset}`);
     try {
         let result = await knex(table)
